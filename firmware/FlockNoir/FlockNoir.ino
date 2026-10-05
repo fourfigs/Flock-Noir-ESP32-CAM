@@ -150,6 +150,7 @@ bool initCamera() {
     freeCameraBuffers();
     return false;
   }
+#if CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
   // DMA directly into the S3's PSRAM instead of copying DMA chunks on the
   // WiFi core. Apply before manual controls: this call reinitializes the sensor.
   err = esp_camera_set_psram_mode(true);
@@ -158,6 +159,7 @@ bool initCamera() {
     esp_camera_deinit();freeCameraBuffers();
     return false;
   }
+#endif
 
   // CRITICAL: freeze exposure/gain/white-balance so the pulse is not
   // auto-corrected away. This is the biggest lever for detection quality.
