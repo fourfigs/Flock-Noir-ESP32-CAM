@@ -165,6 +165,11 @@ bool initCamera() {
   // auto-corrected away. This is the biggest lever for detection quality.
   sensor_t *s = esp_camera_sensor_get();
   if (s) {
+    // The camera driver probes and initializes the sensor; identify its result
+    // without changing the existing capture settings or manual controls.
+    const char *model = s->id.PID == OV2640_PID ? "OV2640" :
+                        s->id.PID == OV3660_PID ? "OV3660" : "unknown";
+    Serial.printf("[CAM] sensor %s (PID 0x%04x)\n", model, (unsigned int)s->id.PID);
     int controls = 0;
     controls |= s->set_whitebal(s, 0);
     controls |= s->set_awb_gain(s, 0);
