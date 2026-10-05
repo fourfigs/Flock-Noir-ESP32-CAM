@@ -6,6 +6,8 @@
 **ALPR evidence, Axon alerts and wardriving on the Seeed XIAO ESP32-S3 Sense.**
 
 By Your Pal Kal · Arduino / PlatformIO · [MIT](LICENSE) · Experimental
+Port to ESP32-CAM +OV3660 (it said 2640) by Four Fig Newtons
+
 </div>
 
 **[INSTALL WITH THE XIAO WEB FLASHER](https://valleytechsolutions.github.io/Flock-Noir/)** · [0.6.0 release](https://github.com/valleytechsolutions/Flock-Noir/releases/tag/xiao-v0.6.0) · [Parts and wiring](HARDWARE.md) · [Detection details](docs/RADIO.md)
@@ -211,6 +213,8 @@ Thanks to:
   its [documentation](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/).
 - **[Espressif](https://github.com/espressif/arduino-esp32)** (Arduino-ESP32 core,
   esp32-camera) and Mikal Hart ([TinyGPSPlus](https://github.com/mikalhart/TinyGPSPlus)).
+- **Four Fig Newtons** for the **ESP32-CAM + OV3660 port**, adapting Flock Noir beyond the
+  original Seeed XIAO ESP32-S3 Sense + OV2640 hardware target.
 - **[WiGLE](https://wigle.net)** for the wardriving CSV format and mapping ecosystem.
 
 If you build on this, please keep these attributions and add your own.
