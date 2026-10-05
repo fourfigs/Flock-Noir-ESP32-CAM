@@ -8,10 +8,14 @@
 #include <Preferences.h>
 #include <esp_wifi.h>
 #include <esp32-hal-alloc-ble-mem.h> // retain BLE memory before Arduino startup
+#if CONFIG_IDF_TARGET_ESP32
+#include <NimBLEDevice.h>
+#else
 #include <nimble/nimble_port.h>
 #include <nimble/nimble_port_freertos.h>
 #include <host/ble_hs.h>
 #include <host/ble_gap.h>
+#endif
 
 Radio radio;
 static std::atomic<bool> bleReady{false},bleScanning{false},bleBusy{false};
@@ -78,9 +82,21 @@ static int bleEvent(ble_gap_event *event,void *) {
   }
   memcpy(o.data,p.data,o.length);radio.enqueue(o);return 0;
 }
+#if !CONFIG_IDF_TARGET_ESP32
 static void bleHost(void *) {nimble_port_run();nimble_port_freertos_deinit();}
-static void bleSync() {bleReady=true;}
-static void bleReset(int) {bleReady=false;bleScanning=false;bleFault=true;}
+#endif
+static void bleSync() {
+#if CONFIG_IDF_TARGET_ESP32
+  NimBLEDevice::onSync();
+#endif
+  bleReady=true;
+}
+static void bleReset(int reason) {
+#if CONFIG_IDF_TARGET_ESP32
+  NimBLEDevice::onReset(reason);
+#endif
+  bleReady=false;bleScanning=false;bleFault=true;
+}
 void Radio::enqueue(const RadioObservation &o) {
   ++_packets;
   if(!_queue || xQueueSend(_queue,&o,0)!=pdTRUE) ++_dropped;
@@ -119,9 +135,15 @@ void Radio::begin(bool sdReady) {
   _switchAt=millis()+1; // restore the saved dashboard channel through the mode state machine
   _wifiReady=startWifi();
   if(!_wifiReady) Serial.println("[RADIO] promiscuous initialization failed; will retry");
+#if CONFIG_IDF_TARGET_ESP32
+  if(NimBLEDevice::init("")) {
+    ble_hs_cfg.sync_cb=bleSync;ble_hs_cfg.reset_cb=bleReset;
+    bleReady=true;
+#else
   if(nimble_port_init()==ESP_OK) {
     ble_hs_cfg.sync_cb=bleSync;ble_hs_cfg.reset_cb=bleReset;
     nimble_port_freertos_init(bleHost);
+#endif
   } else {bleFault=true;Serial.println("[BLE] host initialization failed");}
   if(_sd) {
     if(!SD.exists("/radio") && !SD.mkdir("/radio")) {_sd=false;++_logErrors;}
