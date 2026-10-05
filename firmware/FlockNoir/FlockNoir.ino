@@ -229,7 +229,7 @@ void cameraAnalysisTask(void *) {
 //  SD / CSV
 // ---------------------------------------------------------------------------
 bool initSD() {
-  // XIAO ESP32-S3 Sense wires the microSD to SPI with CS on GPIO21 (Seeed wiki).
+  // Use the selected board's microSD SPI wiring from config.h.
   if (SD_SCK_PIN >= 0)                                  // optional custom SPI pins
     SPI.begin(SD_SCK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
   if (!SD.begin(SD_CS_PIN)) {
@@ -632,9 +632,11 @@ void setup() {
   delay(300);
   Serial.println("\n=== Flock Noir v" FLOCK_NOIR_VERSION " ===");
 
-  if (!GPSserial.setRxBufferSize(2048)) Serial.println("[GPS] RX buffer allocation failed");
-  GPSserial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-  if (!GPSserial) Serial.println("[GPS] UART initialization failed");
+  if (GPS_RX_PIN >= 0) {
+    if (!GPSserial.setRxBufferSize(2048)) Serial.println("[GPS] RX buffer allocation failed");
+    GPSserial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+    if (!GPSserial) Serial.println("[GPS] UART initialization failed");
+  }
 
   g_cameraReady = initCamera();
   if (!g_cameraReady) Serial.println("[CAM] DISABLED (check ribbon/pins)");

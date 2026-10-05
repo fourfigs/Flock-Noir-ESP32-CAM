@@ -111,7 +111,7 @@ bool Radio::startWifi() {
 }
 void Radio::begin(bool sdReady) {
   _sd=sdReady;
-  pinMode(RADIO_BOOT_PIN,INPUT_PULLUP);
+  if(RADIO_BOOT_PIN >= 0) pinMode(RADIO_BOOT_PIN,INPUT_PULLUP);
   _queue=xQueueCreate(32,sizeof(RadioObservation));
   if(!_queue) {Serial.println("[RADIO] queue allocation failed");return;}
   Preferences prefs;
@@ -360,7 +360,7 @@ void Radio::update(bool fix,double lat,double lon,double alt,const char *iso,boo
   ir=ir && opticalEnabled();camera=camera && opticalEnabled();
   if(ir){_irAt=now;optical(true,now);}
   if(camera){_cameraAt=now;optical(false,now);}
-  if(!digitalRead(RADIO_BOOT_PIN)) {
+  if(RADIO_BOOT_PIN >= 0 && !digitalRead(RADIO_BOOT_PIN)) {
     if(!_bootPressed)_bootPressed=now;
     if(_bootPressed!=UINT32_MAX && now-_bootPressed>=1500) {
       _desiredField=false;_switchAt=now;_bootPressed=UINT32_MAX;

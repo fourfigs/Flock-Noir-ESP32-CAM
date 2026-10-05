@@ -196,7 +196,7 @@ bool Recorder::start(bool withAudio) {
   writeAviHeader();
 
   _audioOn = false;
-  if (withAudio) {
+  if (withAudio && MIC_CLK_PIN >= 0 && MIC_DATA_PIN >= 0) {
     I2S_mic.setPinsPdmRx(MIC_CLK_PIN, MIC_DATA_PIN);
     if (I2S_mic.begin(I2S_MODE_PDM_RX, MIC_SAMPLE_RATE,
                       I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO)) {

@@ -33,6 +33,12 @@
 #define GPS_PROFILE   GPS_PROFILE_EXTERNAL    // <-- SET YOUR GPS HERE
 
 #define GPS_UART_NUM   1          // Serial1 (UART1)
+#if defined(FLOCK_BOARD_ESP32_CAM)
+  // External GPS wiring is unresolved; do not fall back to UART default pins.
+  #define GPS_RX_PIN   -1
+  #define GPS_TX_PIN   -1
+  #define GPS_BAUD     9600
+#else
 #if   GPS_PROFILE == GPS_PROFILE_XIAO_L76K
   #define GPS_RX_PIN   44         // D7  <- L76K TX
   #define GPS_TX_PIN   43         // D6  -> L76K RX
@@ -44,6 +50,7 @@
 #else
   #error "Set GPS_PROFILE to GPS_PROFILE_XIAO_L76K or GPS_PROFILE_EXTERNAL"
 #endif
+#endif
 
 // -----------------------------------------------------------------------------
 //  Buzzer  (PASSIVE piezo -- required for RTTTL melodies; active buzzers
@@ -54,8 +61,13 @@
 //  camera's XCLK (camera uses LEDC channel/timer 0). If you ever see the camera
 //  image glitch when the buzzer sounds, change BUZZER_LEDC_CHANNEL.
 // -----------------------------------------------------------------------------
+#if defined(FLOCK_BOARD_ESP32_CAM)
+// External buzzer wiring is unresolved; GPIO1 belongs to the serial console.
+#define BUZZER_PIN         -1
+#else
 #define BUZZER_ENABLE_PIN     // comment out to build with no buzzer support
 #define BUZZER_PIN         1          // D0 = GPIO1
+#endif
 #define BUZZER_LEDC_CHANNEL 5        // keep away from camera's channel 0
 #define BUZZER_MAX_TONES   5         // configurable tone slots
 #define BUZZER_STARTUP_BEEP 1        // 1 = chirp once on boot to prove wiring
@@ -71,11 +83,19 @@
 //  These do NOT overlap the camera pins, so SD + camera coexist.
 //  Ref: wiki.seeedstudio.com/xiao_esp32s3_sense_filesystem  ->  SD.begin(21)
 // -----------------------------------------------------------------------------
+#if defined(FLOCK_BOARD_ESP32_CAM)
+// Onboard microSD socket in SPI mode: DATA3=CS, CLK=SCK, DATA0=MISO, CMD=MOSI.
+#define SD_CS_PIN      13
+#define SD_SCK_PIN     14
+#define SD_MISO_PIN    2
+#define SD_MOSI_PIN    15
+#else
 #define SD_CS_PIN      21
 // Explicit Sense SPI pin map:
 #define SD_SCK_PIN     7
 #define SD_MISO_PIN    8
 #define SD_MOSI_PIN    9
+#endif
 
 // -----------------------------------------------------------------------------
 #if defined(FLOCK_BOARD_ESP32_CAM)
@@ -174,7 +194,12 @@
 //  The defaults are a timing profile, not a unique Flock identifier.
 //  Wiring and headroom checks: HARDWARE.md. Behaviour: docs/RADIO.md.
 // -----------------------------------------------------------------------------
+#if defined(FLOCK_BOARD_ESP32_CAM)
+// No confirmed free ADC1 wiring; GPIO2 is ADC2 and belongs to microSD.
+#define IR_SENSOR_PIN         -1
+#else
 #define IR_SENSOR_PIN         2       // D1 / GPIO2 (ADC1_CH1)
+#endif
 #define IR_SAMPLE_HZ          1000    // ADC samples per second
 #define IR_RING               256     // decimated scope ring (for the UI)
 #define IR_MIN_HZ             8.0f     // configurable timing profile, not device identity
@@ -189,10 +214,12 @@
 #define IR_PULSE_MIN_MS       8.0f
 #define IR_PULSE_MAX_MS       35.0f
 #define IR_MAX_SAMPLE_GAP_US  5000
+#if !defined(FLOCK_BOARD_ESP32_CAM)
 static_assert(IR_SENSOR_PIN >= 2 && IR_SENSOR_PIN <= 6,
               "Use a free XIAO Sense ADC1 header pin D1-D5 for OPT101");
 static_assert(IR_SENSOR_PIN != BUZZER_PIN && IR_SENSOR_PIN != GPS_RX_PIN && IR_SENSOR_PIN != GPS_TX_PIN,
               "OPT101 pin conflicts with another peripheral");
+#endif
 
 // Re-arm: suppress duplicate log rows / beeps for the same source for this long.
 #define ALERT_HOLDOFF_MS   4000
@@ -223,12 +250,23 @@ static_assert(IR_SENSOR_PIN != BUZZER_PIN && IR_SENSOR_PIN != GPS_RX_PIN && IR_S
 #define REC_DIR            "/videos"
 #define REC_MAX_FRAMES     18000        // ~20 min @ 15fps; auto-stops at cap
 #define REC_JPEG_QUALITY   80
+#if defined(FLOCK_BOARD_ESP32_CAM)
+// No confirmed external microphone wiring.
+#define MIC_CLK_PIN        -1
+#define MIC_DATA_PIN       -1
+#else
 #define MIC_CLK_PIN        42
 #define MIC_DATA_PIN       41
+#endif
 #define MIC_SAMPLE_RATE    16000        // Hz, mono 16-bit
 
 // Radio controls use no peripheral header pads. BOOT restores the dashboard.
+#if defined(FLOCK_BOARD_ESP32_CAM)
+// GPIO0 is camera XCLK; a separate button pin is unresolved.
+#define RADIO_BOOT_PIN -1
+#else
 #define RADIO_BOOT_PIN 0
+#endif
 #define RADIO_DWELL_MS 350
 #define RADIO_CORRELATE_MS 3000
 #define GPS_MAX_AGE_MS 3000

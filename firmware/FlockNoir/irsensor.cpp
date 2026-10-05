@@ -7,6 +7,7 @@
 IrSensor irSensor;
 static Preferences irPrefs;
 void IrSensor::begin() {
+  if (IR_SENSOR_PIN < 0) return;
   if (irPrefs.begin("flockir", true)) {
     _enabled = irPrefs.getBool("en", IR_DEFAULT_ENABLED != 0); irPrefs.end();
   }
