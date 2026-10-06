@@ -72,9 +72,11 @@ it cannot survey Bluetooth Classic, 5/6 GHz WiFi or silent radios.
    tone settings persist. On upgrades, the previous ALPR/General selection migrates.
 
 This binary is for the **Seeed XIAO ESP32-S3 Sense with OV2640**. A chip-family check
-cannot distinguish every S3 board. **ESP32-CAM has no supported build here** and
-uses different pins. Raspberry Pi Zero 2 W remains on its separate **0.5.1** release
-and [Pi guide](pi/README.md); this update targets XIAO only.
+cannot distinguish every S3 board. **Do not flash this XIAO binary onto an
+ESP32-CAM.** This fork has a separate `esp32_cam` source-build target with different
+pins; see the [ESP32-CAM instructions below](#esp32-cam--ov3660-port).
+Raspberry Pi Zero 2 W remains on its separate **0.5.1** release and
+[Pi guide](pi/README.md).
 
 ### Radio coverage
 
@@ -91,7 +93,78 @@ the hotspot, even if the saved scan mode is Pig Detector or Wardrive.
 
 ## Parts and wiring
 
-Use the [full bill of materials and assembly guide](HARDWARE.md). For the complete
+### ESP32-CAM + OV3660 port
+
+This fork uses an **ESP32-CAM with AI Thinker camera connector wiring** and an
+**OV3660** (the camera supplied with this build was advertised as OV2640).
+Use the ESP32-CAM pin map below, not the XIAO diagram or D-pin labels.
+
+**Hardware status — October 6, 2026:** the final sensor has not arrived, and the
+ATGM336H is still not powering up. GPS operation and the complete sensor setup
+remain unverified. The GPS and buzzer connections below describe the firmware
+configuration, not a tested complete assembly.
+
+Parts for this port: ESP32-CAM and compatible camera, stable board power supply,
+USB programming adapter/base, FAT32 microSD, small **passive** piezo, ~100 Ω
+series resistor, hookup wires, and ATGM336H GPS with antenna once its power issue
+is resolved.
+
+| Connection | ESP32-CAM pin / setting |
+|---|---|
+| Camera | Existing ribbon connector; AI Thinker camera pin map |
+| ATGM336H TX → ESP RX | **U0R / GPIO3**, **9600 baud** |
+| ATGM336H RX | Leave unconnected; receive-only GPS (`GPS_TX_PIN = -1`) |
+| ATGM336H GND | Common **GND** with ESP32-CAM |
+| ATGM336H VCC | Supply matching the exact module/breakout rating; power-up is unresolved |
+| Passive piezo signal / return | **GPIO12 → ~100 Ω → piezo → GND** |
+| Onboard microSD | **SPI mode**: CS **GPIO13**, SCK **GPIO14**, MISO **GPIO2**, MOSI **GPIO15** |
+| OPT101 analog output | **Not connected / unsupported in this configuration** (`IR_SENSOR_PIN = -1`) |
+
+Disconnect power before changing wiring. GPS power requirements depend on the
+exact breakout; do not assume the ESP32-CAM's board supply is also suitable for
+GPS VCC. Confirm the module labels, rated input voltage, polarity and voltage at
+its VCC/GND terminals before reconnecting the UART. A satellite-fix test must
+wait until the power issue is resolved.
+
+**GPIO3 is shared with the programming adapter's TX line.** Disconnect GPS TX
+while flashing. For GPS operation, disconnect the adapter's TX connection to
+GPIO3 before reconnecting GPS TX, so two transmitters do not drive the same pin.
+The firmware reserves GPIO3 for GPS reception and keeps console output on GPIO1;
+serial console input commands are unavailable in this configuration. Use the web
+dashboard for controls.
+
+**GPIO12 is a boot-strapping pin:** the buzzer circuit must not pull it high at
+reset. Use a small passive piezo as shown, not an active buzzer module with a
+pull-up. The SD socket uses SPI in this firmware; do not substitute a generic
+ESP32-CAM SD_MMC wiring guide.
+
+**OPT101 does not yet have a supported analog connection on this port.**
+No free ADC1 input has been confirmed with the camera connected, and
+GPIO2 belongs to microSD. Keep the IR photodiode setting off; do not copy the
+XIAO OPT101-to-GPIO2 wiring below. Receiving the sensor alone will not enable
+this path without a verified interface and corresponding firmware support.
+
+Build and upload the board-specific firmware with PlatformIO:
+
+```sh
+python -m platformio run -e esp32_cam
+python -m platformio run -e esp32_cam -t upload
+```
+
+After flashing, return the board to normal boot, join **Flock Noir** with password
+**flocknoir**, and open **http://192.168.4.1**. Check the camera preview, SD status
+and buzzer separately. Camera/radio checks can proceed while GPS and the final
+sensor are pending. GPS-tagged logging and WiGLE survey output require a working
+receiver and a valid fix; missing coordinates are expected until then.
+
+Open **http://192.168.4.1/api/status** in a browser for the system-status page,
+which refreshes every two seconds. For raw status data, use
+**http://192.168.4.1/api/status?format=json**. An enabled GPS or buzzer setting
+does not confirm that the physical module is powered or working.
+
+### XIAO ESP32-S3 Sense reference build
+
+Use the [XIAO bill of materials and assembly guide](HARDWARE.md). For the complete
 ALPR build: XIAO S3 **Sense**, compatible **OV2640 without its IR-cut filter**,
 **3.3 V OPT101 analog module**, ATGM336H GPS, antenna, FAT32 microSD, a passive piezo,
 wires and a USB data cable/power source. No additional bare photodiode or op-amp
@@ -109,8 +182,9 @@ is needed when using OPT101.
 
 **D1 is the second left pin** with USB at the top and the component side facing
 you. Disconnect power before wiring. Follow the breakout labels; terminal order
-varies. Use a 3.3 V-compatible module and never feed 5 V into the ADC. Keep your
-working ATGM336H power wiring; its UART pins and 9600 baud remain unchanged.
+varies. Use a 3.3 V-compatible module and never feed 5 V into the ADC. Confirm the
+ATGM336H breakout's supply rating before connecting power; the UART pin map here
+applies only to the XIAO reference build.
 
 Select **ALPR**, enable **IR photodiode sensor** after connecting OPT101, and cover /
 uncover it to check the raw count and waveform. First-install sensor default is
