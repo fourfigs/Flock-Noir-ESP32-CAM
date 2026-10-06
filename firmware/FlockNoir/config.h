@@ -34,8 +34,8 @@
 
 #define GPS_UART_NUM   1          // Serial1 (UART1)
 #if defined(FLOCK_BOARD_ESP32_CAM)
-  // External GPS wiring is unresolved; do not fall back to UART default pins.
-  #define GPS_RX_PIN   -1
+  // ATGM336H TX -> GPIO3; receive-only UART1 (console RX is detached).
+  #define GPS_RX_PIN   3
   #define GPS_TX_PIN   -1
   #define GPS_BAUD     9600
 #else
@@ -62,8 +62,9 @@
 //  image glitch when the buzzer sounds, change BUZZER_LEDC_CHANNEL.
 // -----------------------------------------------------------------------------
 #if defined(FLOCK_BOARD_ESP32_CAM)
-// External buzzer wiring is unresolved; GPIO1 belongs to the serial console.
-#define BUZZER_PIN         -1
+// Passive buzzer through 100 ohm to GPIO12; keep this strap low at reset.
+#define BUZZER_ENABLE_PIN
+#define BUZZER_PIN         12
 #else
 #define BUZZER_ENABLE_PIN     // comment out to build with no buzzer support
 #define BUZZER_PIN         1          // D0 = GPIO1

@@ -636,6 +636,12 @@ void handleTest() {
 // ---------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
+#if defined(FLOCK_BOARD_ESP32_CAM)
+  // Core startup preselects UART0 RX on GPIO3; -1 alone preserves that pin.
+  // Detach the initialized console before restarting TX-only for GPS on GPIO3.
+  Serial.end();
+  Serial.begin(115200, SERIAL_8N1, -1, 1);
+#endif
   delay(300);
   Serial.println("\n=== Flock Noir v" FLOCK_NOIR_VERSION " ===");
 
