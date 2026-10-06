@@ -33,6 +33,7 @@
 #include "radio.h"
 #include "gps_time.h"
 #include "web_ui.h"
+#include "status_ui.h"
 #include "logo.h"
 
 // ---------------------------------------------------------------------------
@@ -464,7 +465,16 @@ String statusJson() {
   return j;
 }
 
-void handleStatus() { server.send(200, "application/json", statusJson()); }
+void handleStatus() {
+  if (!server.hasArg("format") && server.header("Accept").indexOf("text/html") >= 0) {
+    String page = FPSTR(STATUS_HTML);
+    page.replace("__GPS_ENABLED__", GPS_RX_PIN >= 0 ? "true" : "false");
+    page.replace("__BUZZER_ENABLED__", BUZZER_PIN >= 0 ? "true" : "false");
+    server.send(200, "text/html", page);
+    return;
+  }
+  server.send(200, "application/json", statusJson());
+}
 
 void handleLog() {
   if (!g_sdReady) { server.send(404, "text/plain", "no SD card"); return; }
@@ -684,6 +694,8 @@ void setup() {
   Serial.printf("[WD] wardriver %s -> %s\n",
                 wardriver.enabled() ? "ON" : "off", wardriver.csvPath().c_str());
 
+  const char *statusHeaders[] = {"Accept"};
+  server.collectHeaders(statusHeaders, 1);
   server.on("/", handleRoot);
   server.on("/logo.png", handleLogo);
   server.on("/api/status", handleStatus);
